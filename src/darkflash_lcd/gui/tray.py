@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+import sys
 from pathlib import Path
 
 from PySide6.QtGui import QAction, QIcon
@@ -9,14 +11,22 @@ from .. import ipc
 from .strings import t
 
 AUTOSTART = Path.home() / ".config" / "autostart" / "darkflash-lcd-tray.desktop"
-AUTOSTART_TEXT = """[Desktop Entry]
+
+
+def autostart_text(exe: str) -> str:
+    """Autostart entry; `exe` is absolute so it works even if ~/.local/bin isn't on PATH."""
+    return f"""[Desktop Entry]
 Type=Application
 Name=darkFlash LCD (tray)
-Exec=darkflash-lcd-gui --tray
+Exec={exe} --tray
 Icon=darkflash-lcd
 NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """
+
+
+def _gui_exe() -> str:
+    return shutil.which("darkflash-lcd-gui") or str(Path(sys.argv[0]).resolve())
 
 
 class Tray(QSystemTrayIcon):
@@ -57,6 +67,6 @@ class Tray(QSystemTrayIcon):
     def set_autostart(on: bool) -> None:
         if on:
             AUTOSTART.parent.mkdir(parents=True, exist_ok=True)
-            AUTOSTART.write_text(AUTOSTART_TEXT)
+            AUTOSTART.write_text(autostart_text(_gui_exe()))
         else:
             AUTOSTART.unlink(missing_ok=True)

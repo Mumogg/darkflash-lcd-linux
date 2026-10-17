@@ -28,23 +28,40 @@ def config_path() -> Path:
     return Path(base) / "darkflash-lcd" / "config.toml"
 
 
+MIN_INTERVAL_MS = 100
+MAX_INTERVAL_MS = 60000
+
+
+def validate(cfg: Config) -> str | None:
+    """Return an error message, or None if the config is usable."""
+    i = cfg.interval_ms
+    if not isinstance(i, int) or isinstance(i, bool) or not MIN_INTERVAL_MS <= i <= MAX_INTERVAL_MS:
+        return f"interval_ms must be an integer between {MIN_INTERVAL_MS} and {MAX_INTERVAL_MS}"
+    if cfg.unit not in ("C", "F"):
+        return 'unit must be "C" or "F"'
+    f = cfg.fields
+    if not (isinstance(f, tuple) and len(f) == 4 and all(isinstance(x, str) and x for x in f)):
+        return "fields must be a list of 4 sensor ids"
+    return None
+
+
 def load(path: Path) -> tuple[Config, str | None]:
     if not path.exists():
         return Config(), None
     try:
-        data = tomllib.loads(path.read_text())
-    except (OSError, tomllib.TOMLDecodeError) as e:
+        data = tomllib.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as e:
         return Config(), f"{path}: {e}"
-    interval = data.get("interval_ms", 500)
-    unit = data.get("unit", "C")
     fields = data.get("fields", list(DEFAULT_FIELDS))
-    if not isinstance(interval, int) or interval < 100:
-        return Config(), f"{path}: interval_ms must be an integer >= 100"
-    if unit not in ("C", "F"):
-        return Config(), f'{path}: unit must be "C" or "F"'
-    if not (isinstance(fields, list) and len(fields) == 4 and all(isinstance(f, str) for f in fields)):
-        return Config(), f"{path}: fields must be a list of 4 sensor ids"
-    return Config(interval, unit, tuple(fields)), None
+    cfg = Config(
+        data.get("interval_ms", 500),
+        data.get("unit", "C"),
+        tuple(fields) if isinstance(fields, list) else fields,
+    )
+    err = validate(cfg)
+    if err:
+        return Config(), f"{path}: {err}"
+    return cfg, None
 
 
 def save(path: Path, cfg: Config) -> None:
@@ -57,5 +74,5 @@ def save(path: Path, cfg: Config) -> None:
         f"fields = [{', '.join(json.dumps(f) for f in cfg.fields)}]\n"
     )
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(text)
+    tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)

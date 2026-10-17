@@ -190,3 +190,47 @@ def test_test_pattern_holds_each_frame_two_seconds(tmp_path, monkeypatch):
     first = {p[5:20] for p in dev.packets[:4]}
     assert len(first) == 1
     assert dev.packets[4][5:20] not in first
+
+
+def test_startup_config_error_survives_tick(tmp_path):
+    (tmp_path / "config.toml").write_text("interval_ms = [")
+    d = make(tmp_path, [FakeDevice()])
+    d.tick()
+    assert d.state["config_error"]
+    assert d.handle({"cmd": "status"})["config_error"]
+
+
+def test_failed_reload_shows_in_status_until_fixed(tmp_path):
+    p = tmp_path / "config.toml"
+    d = make(tmp_path, [FakeDevice()])
+    p.write_text("interval_ms = [")
+    d.handle({"cmd": "reload"})
+    d.tick()
+    assert d.handle({"cmd": "status"})["config_error"]
+    save(p, Config())
+    assert d.handle({"cmd": "reload"})["ok"]
+    assert d.handle({"cmd": "status"})["config_error"] is None
+
+
+def test_request_with_no_reply_raises_connection_error(tmp_path):
+    import socket as s
+    import threading as th
+
+    sock = tmp_path / "mute.sock"
+    srv = s.socket(s.AF_UNIX, s.SOCK_STREAM)
+    srv.bind(str(sock))
+    srv.listen(1)
+
+    def accept_and_close():
+        conn, _ = srv.accept()
+        conn.recv(1024)
+        conn.close()
+
+    t = th.Thread(target=accept_and_close)
+    t.start()
+    try:
+        with pytest.raises(ConnectionError):
+            ipc.request({"cmd": "status"}, sock)
+    finally:
+        t.join()
+        srv.close()

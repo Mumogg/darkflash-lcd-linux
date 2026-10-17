@@ -105,7 +105,11 @@ class MainWindow(QWidget):
                       unit="F" if self.unit.currentIndex() == 1 else "C",
                       interval_ms=self.interval.value())
         save(path, cfg)
-        self._send({"cmd": "reload"})
+        r = self._send({"cmd": "reload"})
+        if r is not None and not r.get("ok"):
+            QMessageBox.warning(self, t("title"), str(r.get("error")))
+        if cfg.unit == "F" and self.combos[0].currentData():
+            QMessageBox.information(self, t("title"), t("f_note"))
         self.refresh()
 
     def start_service(self) -> None:
@@ -122,6 +126,9 @@ class MainWindow(QWidget):
             return
         self.start_btn.hide()
         conn = st["connection"]
-        self.status.setText(("✔ " if conn == "connected" else "⚠ ") + t(conn))
+        text = ("✔ " if conn == "connected" else "⚠ ") + t(conn)
+        if st.get("config_error"):
+            text += "\n⚠ " + st["config_error"]
+        self.status.setText(text)
         self.help_btn.setVisible(conn != "connected")
         self.display.set_reading(st.get("reading"), conn == "connected" and not st.get("paused"))

@@ -35,3 +35,10 @@ def test_display_widget_paints_offscreen(monkeypatch):
         w.set_reading(reading, online)
         assert not w.grab().isNull()
     app.processEvents()
+
+
+def test_tray_autostart_uses_absolute_path():
+    from darkflash_lcd.gui.tray import autostart_text
+
+    text = autostart_text("/home/x/.local/bin/darkflash-lcd-gui")
+    assert "Exec=/home/x/.local/bin/darkflash-lcd-gui --tray" in text

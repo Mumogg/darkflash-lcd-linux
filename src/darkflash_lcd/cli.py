@@ -9,7 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from . import __version__, ipc
-from .config import config_path, load, save
+from .config import config_path, load, save, validate
 from .device import find_hidraw
 from .i18n import t
 from .sensors import discover, read_all
@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     sh = sub.add_parser("show", help="show fixed values for a few seconds")
     sh.add_argument("values", nargs=4, type=float, metavar=("TEMP", "LEFT", "RIGHT", "BOTTOM"))
     sh.add_argument("--seconds", type=float, default=10)
-    for name in ("test", "pause", "resume", "doctor"):
+    for name in ("test", "pause", "resume", "reload", "doctor"):
         sub.add_parser(name)
     c = sub.add_parser("config")
     csub = c.add_subparsers(dest="action", required=True)
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         v = a.values
         return _send({"cmd": "preview", "values": [round(v[0] * 10), round(v[1]), round(v[2]), round(v[3])],
                       "seconds": a.seconds})
-    if a.cmd in ("test", "pause", "resume"):
+    if a.cmd in ("test", "pause", "resume", "reload"):
         return _send({"cmd": a.cmd})
     if a.cmd == "doctor":
         checks = doctor()
@@ -117,6 +117,9 @@ def main(argv: list[str] | None = None) -> int:
         if a.action == "get":
             print(err or path.read_text() if path.exists() else f"(defaults) {cfg}")
             return 0
+        if err:  # don't overwrite a file we couldn't read
+            print(err)
+            return 1
         if a.key.startswith("field"):
             fields = list(cfg.fields)
             fields[int(a.key[-1])] = a.value
@@ -124,11 +127,22 @@ def main(argv: list[str] | None = None) -> int:
         elif a.key == "unit":
             cfg = replace(cfg, unit=a.value.upper())
         else:
-            cfg = replace(cfg, interval_ms=int(a.value))
+            try:
+                cfg = replace(cfg, interval_ms=int(a.value))
+            except ValueError:
+                print(f"interval_ms must be an integer, got {a.value!r}")
+                return 1
+        problem = validate(cfg)
+        if problem:
+            print(problem)
+            return 1
         save(path, cfg)
         try:
-            ipc.request({"cmd": "reload"})
+            r = ipc.request({"cmd": "reload"})
         except ConnectionError:
-            pass
+            return 0  # saved; the service picks it up when it starts
+        if not r.get("ok"):
+            print(r.get("error"))
+            return 1
         return 0
     return 1

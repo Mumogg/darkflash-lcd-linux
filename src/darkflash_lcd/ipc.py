@@ -32,14 +32,17 @@ def request(msg: dict, path: Path | None = None, timeout: float = 2.0) -> dict:
                 buf += chunk
     except OSError as e:
         raise ConnectionError(f"darkflash-lcd daemon not reachable at {path}: {e}") from e
-    return json.loads(buf)
+    try:
+        return json.loads(buf)
+    except ValueError as e:
+        raise ConnectionError(f"darkflash-lcd daemon at {path} closed without a valid reply") from e
 
 
 def _alive(path: Path) -> bool:
     try:
         request({"cmd": "status"}, path, timeout=0.5)
         return True
-    except (ConnectionError, ValueError):
+    except ConnectionError:
         return False
 
 

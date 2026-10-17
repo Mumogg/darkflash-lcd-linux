@@ -29,6 +29,8 @@ class Daemon:
         self._sources_factory = sources_factory
         self.cfg_path = cfg_path
         self.cfg, err = load(cfg_path)
+        if err:
+            log.error("config error, using defaults: %s", err)
         self.sources = {s.id: s for s in sources_factory()}
         self.enc = Encoder()
         self.dev: Device | None = None
@@ -38,7 +40,7 @@ class Daemon:
         self._test_until = 0.0
         self._lock = threading.Lock()
         self.state: dict = {"connection": "not_found", "values": {}, "reading": None,
-                            "errors": [err] if err else [], "paused": False, "device": None}
+                            "errors": [], "config_error": err, "paused": False, "device": None}
 
     # ---- device ----
     def _ensure_device(self) -> bool:
@@ -101,7 +103,9 @@ class Daemon:
             return {"ok": True, **self.state, "config": self.cfg.__dict__ | {"fields": list(self.cfg.fields)}}
         if cmd == "reload":
             cfg, err = load(self.cfg_path)
+            self.state["config_error"] = err
             if err:
+                log.error("config reload failed, keeping previous settings: %s", err)
                 return {"ok": False, "error": err}
             with self._lock:
                 self.cfg = cfg

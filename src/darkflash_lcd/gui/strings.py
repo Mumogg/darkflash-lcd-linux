@@ -9,7 +9,7 @@ _S = {
            "autostart": "Start tray with session", "daemon_off": "Service not running",
            "connected": "Display connected", "not_found": "Cooler not found",
            "no_permission": "No permission (udev rule missing)", "error": "Display error",
-           "f_note": "The display always prints °C; with °F the number is Fahrenheit.",
+           "f_note": "The display always prints °C. With °F, any temperature of 100 °F (37.8 °C) or more makes the big field blink EE, so °F is mainly useful for the round fields.",
            "help_text": "Not found: plug the pump's USB cable into an internal USB 2.0 header.\nNo permission: run install.sh again (it installs the udev rule), then replug or reboot."},
     "es": {"title": "darkFlash LCD", "big": "Campo grande (°C)", "left": "Círculo izquierdo (dice CPU)",
            "right": "Círculo derecho (dice RAM)", "bottom": "Abajo (MHz / RPM)", "unit": "Unidad de temperatura",
@@ -19,7 +19,7 @@ _S = {
            "autostart": "Iniciar bandeja con la sesión", "daemon_off": "El servicio no está activo",
            "connected": "Pantalla conectada", "not_found": "Líquida no encontrada",
            "no_permission": "Sin permisos (falta la regla udev)", "error": "Error de pantalla",
-           "f_note": "La pantalla siempre muestra °C; con °F el número es en Fahrenheit.",
+           "f_note": "La pantalla siempre muestra °C. Con °F, cualquier temperatura de 100 °F (37.8 °C) o más hace parpadear EE en el campo grande, así que °F sirve más para los círculos.",
            "help_text": "No encontrada: conecta el cable USB de la bomba a un header USB 2.0 interno.\nSin permisos: vuelve a ejecutar install.sh (instala la regla udev) y reconecta o reinicia."},
 }
 

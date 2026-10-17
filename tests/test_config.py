@@ -33,3 +33,25 @@ def test_quotes_in_ids_survive(tmp_path):
     cfg = Config(fields=('hwmon.a"b.temp1', "cpu.usage", "ram.usage", "cpu.freq"))
     save(p, cfg)
     assert load(p)[0] == cfg
+
+
+def test_interval_upper_bound(tmp_path):
+    p = tmp_path / "config.toml"
+    p.write_text("interval_ms = 10000000000000\n")
+    cfg, err = load(p)
+    assert cfg == Config() and "interval_ms" in err
+
+
+def test_non_utf8_file_is_an_error_not_a_crash(tmp_path):
+    p = tmp_path / "config.toml"
+    p.write_bytes(b'unit = "C" # l\xedquida\n')
+    cfg, err = load(p)
+    assert cfg == Config() and err
+
+
+def test_validate_rejects_bad_values():
+    from darkflash_lcd.config import validate
+
+    assert validate(Config()) is None
+    assert "unit" in validate(Config(unit="K"))
+    assert "interval_ms" in validate(Config(interval_ms=50))

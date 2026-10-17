@@ -12,8 +12,8 @@ GUI=""
 if [[ "${1:-}" == "--no-gui" ]]; then GUI=""
 elif [[ "${1:-}" == "--gui" ]]; then GUI="[gui]"
 else
-  read -r -p "Install the graphical app too (PySide6, ~200 MB)? [Y/n] " a
-  [[ "${a:-y}" =~ ^[Yy]$ ]] && GUI="[gui]"
+  read -r -p "Install the graphical app too (PySide6, ~200 MB)? [Y/n] " a || a=""
+  [[ -z "$a" || "$a" =~ ^[YySs] ]] && GUI="[gui]"
 fi
 
 BIN="$HOME/.local/bin"
@@ -44,10 +44,15 @@ fi
 say "Installing user service"
 install -Dm644 packaging/darkflash-lcd.service "$HOME/.config/systemd/user/darkflash-lcd.service"
 systemctl --user daemon-reload
-systemctl --user enable --now darkflash-lcd.service
+systemctl --user enable darkflash-lcd.service
+systemctl --user restart darkflash-lcd.service  # also picks up new code when updating
 
 if [[ -n "$GUI" ]]; then
-  install -Dm644 packaging/darkflash-lcd.desktop "$HOME/.local/share/applications/darkflash-lcd.desktop"
+  GUI_EXE="$(command -v darkflash-lcd-gui || echo "$BIN/darkflash-lcd-gui")"
+  mkdir -p "$HOME/.local/share/applications"
+  # absolute Exec path: ~/.local/bin is not on the desktop session's PATH everywhere
+  sed "s|^Exec=darkflash-lcd-gui|Exec=$GUI_EXE|" packaging/darkflash-lcd.desktop \
+    > "$HOME/.local/share/applications/darkflash-lcd.desktop"
   install -Dm644 packaging/darkflash-lcd.svg "$HOME/.local/share/icons/hicolor/scalable/apps/darkflash-lcd.svg"
 fi
 
