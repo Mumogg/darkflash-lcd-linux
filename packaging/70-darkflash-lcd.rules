@@ -1,0 +1,2 @@
+# darkFlash DN240D / DN360D pump LCD — give the logged-in user access (no root needed at runtime)
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="5131", ATTRS{idProduct}=="2007", TAG+="uaccess"

@@ -57,3 +57,19 @@ Windows app sends). Probably for another display variant; harmless here.
 
 Code for a 60-segment ring exists (`smg88_60`, `TM1721_show3..5`) but is never
 called for this device.
+
+## Hardware-validated (2026-10-17, DN240D, Linux 7.2 / Nobara)
+
+Frames sent with `scripts/hw_smoke.py` and checked on the real pump display:
+
+| frame | sent (v0, v1, v2, v3) | observed |
+|---|---|---|
+| a | 425, 12, 34, 1234 | `42.5°C`, CPU `12%`, RAM `34%`, `1234MHz`; blue ring lit |
+| b | 999, 188, 199, 9999 | `99.9°C`, CPU `188%`, RAM `199%`, `9999MHz` |
+| c | 5, 1, 7, 8 | `0.5°C`, `1%`, `7%`, `8MHz` — no leading zeros |
+| e | 1234, 100, 100, 1000 | big field blinks `EE` / `123` (no point), `100%` both, `1000MHz` |
+| close | closing packet | whole display goes completely black |
+
+Field mapping confirmed: `left` (v1) = circle labelled CPU, `right` (v2) = circle
+labelled RAM. The blue ring is lit whenever the display shows data and is not
+controlled by the packet.
