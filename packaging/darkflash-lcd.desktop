@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=darkFlash LCD
+Comment=Configure the darkFlash AIO pump display
+Comment[es]=Configura la pantalla de la líquida darkFlash
+Exec=darkflash-lcd-gui
+Icon=darkflash-lcd
+Categories=Settings;HardwareSettings;

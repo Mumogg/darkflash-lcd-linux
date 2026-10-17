@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=darkFlash LCD (tray)
+Comment=Configure the darkFlash AIO pump display
+Comment[es]=Configura la pantalla de la líquida darkFlash
+Exec=darkflash-lcd-gui --tray
+Icon=darkflash-lcd
+Categories=Settings;HardwareSettings;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

@@ -73,3 +73,8 @@ Frames sent with `scripts/hw_smoke.py` and checked on the real pump display:
 Field mapping confirmed: `left` (v1) = circle labelled CPU, `right` (v2) = circle
 labelled RAM. The blue ring is lit whenever the display shows data and is not
 controlled by the packet.
+
+Observed on one unit (also under the Windows app): the tenths digit of the big
+field shows some segments dimmer than others. Segments are on/off only (no
+per-segment brightness in the protocol or the TM1721), so this is a backlight /
+LCD hardware issue, not something software can fix.
