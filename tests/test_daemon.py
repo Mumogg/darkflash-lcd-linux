@@ -234,3 +234,30 @@ def test_request_with_no_reply_raises_connection_error(tmp_path):
     finally:
         t.join()
         srv.close()
+
+
+def test_fallback_socket_dir_is_private(tmp_path, monkeypatch):
+    import stat
+    import tempfile
+
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    path = ipc.socket_path()
+    mode = (path.parent).stat().st_mode
+    assert path.parent.parent == tmp_path
+    assert stat.S_IMODE(mode) == 0o700
+
+
+def test_fallback_socket_dir_rejects_shared_dir(tmp_path, monkeypatch):
+    import os
+    import tempfile
+
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    d = tmp_path / f"darkflash-lcd-{os.getuid()}"
+    d.mkdir()
+    d.chmod(0o777)
+    with pytest.raises(RuntimeError):
+        ipc.socket_path()
+    with pytest.raises(ConnectionError):
+        ipc.request({"cmd": "status"})

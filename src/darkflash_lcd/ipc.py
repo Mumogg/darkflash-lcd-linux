@@ -6,19 +6,37 @@ import json
 import os
 import socket
 import socketserver
+import stat
+import tempfile
 import threading
 from collections.abc import Callable
 from pathlib import Path
 
 
+def _private_fallback_dir() -> Path:
+    """Per-user dir in /tmp for when XDG_RUNTIME_DIR is unset; must be ours and 0700."""
+    d = Path(tempfile.gettempdir()) / f"darkflash-lcd-{os.getuid()}"
+    try:
+        d.mkdir(mode=0o700)
+    except FileExistsError:
+        pass
+    st = os.lstat(d)
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o077:
+        raise RuntimeError(f"refusing to use {d}: not a private directory owned by you")
+    return d
+
+
 def socket_path() -> Path:
-    base = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/darkflash-lcd-{os.getuid()}"
-    Path(base).mkdir(parents=True, exist_ok=True)
-    return Path(base) / "darkflash-lcd.sock"
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    base = Path(runtime) if runtime else _private_fallback_dir()
+    return base / "darkflash-lcd.sock"
 
 
 def request(msg: dict, path: Path | None = None, timeout: float = 2.0) -> dict:
-    path = path or socket_path()
+    try:
+        path = path or socket_path()
+    except RuntimeError as e:
+        raise ConnectionError(str(e)) from e
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
             s.settimeout(timeout)
