@@ -18,6 +18,7 @@ from .sensors import Source, discover, read_all
 
 log = logging.getLogger("darkflash-lcd")
 RETRY_S = 2.0
+TEST_FRAME_S = 2.0
 TEST_FRAMES = [Reading(888, 188, 188, 8888), Reading(0, 0, 0, 0), Reading(1888, 199, 199, 9999)]
 
 
@@ -33,6 +34,7 @@ class Daemon:
         self.dev: Device | None = None
         self._next_open = 0.0
         self._preview: tuple[Reading, float] | None = None
+        self._test_start = 0.0
         self._test_until = 0.0
         self._lock = threading.Lock()
         self.state: dict = {"connection": "not_found", "values": {}, "reading": None,
@@ -74,7 +76,8 @@ class Daemon:
                                  self.cfg.unit)
             now = time.monotonic()
             if now < self._test_until:
-                reading = TEST_FRAMES[int(now * 2) % len(TEST_FRAMES)]
+                frame = int((now - self._test_start) / TEST_FRAME_S)
+                reading = TEST_FRAMES[frame % len(TEST_FRAMES)]
             elif self._preview and now < self._preview[1]:
                 reading = self._preview[0]
             else:
@@ -114,7 +117,8 @@ class Daemon:
             self._preview = (Reading(*v), time.monotonic() + float(msg.get("seconds", 5)))
             return {"ok": True}
         if cmd == "test":
-            self._test_until = time.monotonic() + 6
+            self._test_start = time.monotonic()
+            self._test_until = self._test_start + TEST_FRAME_S * len(TEST_FRAMES)
             return {"ok": True}
         if cmd in ("pause", "resume"):
             self.state["paused"] = cmd == "pause"

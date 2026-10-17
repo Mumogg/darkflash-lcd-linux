@@ -175,3 +175,18 @@ def test_run_loop_stops_and_sends_closing_packet(tmp_path):
     t.join(timeout=3)
     assert not t.is_alive()
     assert dev.packets[-1][1] == 15
+
+
+def test_test_pattern_holds_each_frame_two_seconds(tmp_path, monkeypatch):
+    dev = FakeDevice()
+    d = make(tmp_path, [dev])
+    now = [1000.0]
+    monkeypatch.setattr("darkflash_lcd.daemon.time.monotonic", lambda: now[0])
+    d.handle({"cmd": "test"})
+    for _ in range(4):  # 0.0, 0.5, 1.0, 1.5 s -> same frame
+        d.tick()
+        now[0] += 0.5
+    d.tick()  # 2.0 s -> next frame
+    first = {p[5:20] for p in dev.packets[:4]}
+    assert len(first) == 1
+    assert dev.packets[4][5:20] not in first
