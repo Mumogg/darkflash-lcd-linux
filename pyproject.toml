@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "darkflash-lcd"
+version = "0.1.0"
+description = "Linux driver/app for the darkFlash DN240D / DN360D AIO pump LCD (USB 5131:2007)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["psutil>=5.9", "tomli>=2.0; python_version < '3.11'"]
+keywords = ["darkflash", "dn240d", "dn360d", "nebula", "aio", "lcd", "linux", "liquid cooler"]
+classifiers = ["Operating System :: POSIX :: Linux", "Programming Language :: Python :: 3"]
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.5"]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[project.scripts]
+darkflash-lcd = "darkflash_lcd.cli:main"
+
+[project.gui-scripts]
+darkflash-lcd-gui = "darkflash_lcd.gui.app:main"
+
+[project.urls]
+Homepage = "https://github.com/Mumogg/darkflash-lcd-linux"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/darkflash_lcd"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
